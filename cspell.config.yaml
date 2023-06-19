@@ -1,0 +1,18 @@
+version: "0.2"
+ignorePaths:
+  - .devcontainer
+  - .vscode
+  - .gitignore
+  - cspell.config.yaml
+dictionaryDefinitions: []
+dictionaries: []
+words:
+  - apimachinery
+  - clientcmd
+  - clientset
+  - kubeconfig
+  - metav
+  - oidc
+  - volsync
+ignoreWords: []
+import: []
