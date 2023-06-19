@@ -27,7 +27,7 @@
 			"extensions": [
 				"golang.go",
 				"TzachOvadia.todo-list",
-				"premparihar.gotestexplorer"
+				"streetsidesoftware.code-spell-checker"
 			]
 		}
 	},
