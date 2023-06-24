@@ -1,0 +1,34 @@
+variables:
+  - &golang_image "golang:1.20.2"
+  - &when_path # related config files
+    - .woodpecker/lint.yml
+
+pipeline:
+  fetch:
+    image: *golang_image
+    group: prepare
+    commands:
+      - git fetch origin $(git branch --show-current) --unshallow # Get branch history
+      - git fetch origin main
+      - git checkout origin/main -- . # Setup main so it can be compared to
+
+  setup:
+    image: *golang_image
+    group: prepare
+    commands:
+      - curl -LO https://trunk.io/releases/trunk
+      - chmod +x trunk
+      - ./trunk install --ci
+
+  fmt:
+    image: *golang_image
+    group: test
+    commands:
+      - ./trunk fmt --ci
+
+  lint:
+    image: *golang_image
+    group: test
+    commands:
+      - ./trunk check --ci
+    secrets: [USER]
