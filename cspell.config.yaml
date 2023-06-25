@@ -11,13 +11,17 @@ dictionaryDefinitions: []
 dictionaries: []
 words:
   - apimachinery
+  - backube
   - clientcmd
   - clientset
   - kubeconfig
   - metav
   - oidc
+  - replicationsource
+  - replicationsources
   - Rojikku
   - runtimes
+  - unmarshaled
   - unshallow
   - volsync
   - woodpeckerci
