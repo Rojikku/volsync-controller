@@ -3,12 +3,18 @@ variables:
   - &when_path # related config files
     - .woodpecker/lint.yml
 
+clone:
+  git:
+    image: woodpeckerci/plugin-git
+    settings:
+      partial: false
+      lfs: false
+
 pipeline:
   fetch:
     image: *golang_image
     group: prepare
     commands:
-      - git fetch origin $(git branch --show-current) --unshallow # Get branch history
       - git fetch origin main
       - git checkout origin/main -- . # Setup main so it can be compared to
 
