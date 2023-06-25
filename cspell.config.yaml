@@ -4,6 +4,9 @@ ignorePaths:
   - .vscode
   - .gitignore
   - cspell.config.yaml
+  - .trunk
+  - go.mod
+  - go.sum
 dictionaryDefinitions: []
 dictionaries: []
 words:
@@ -13,6 +16,8 @@ words:
   - kubeconfig
   - metav
   - oidc
+  - Rojikku
+  - runtimes
   - unshallow
   - volsync
 ignoreWords: []
