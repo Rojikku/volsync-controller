@@ -27,7 +27,8 @@
       "extensions": [
         "golang.go",
         "TzachOvadia.todo-list",
-        "streetsidesoftware.code-spell-checker"
+        "streetsidesoftware.code-spell-checker",
+        "redhat.vscode-yaml"
       ]
     }
   },
