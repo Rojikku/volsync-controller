@@ -23,13 +23,11 @@ lint:
     - prettier@2.8.8
 runtimes:
   enabled:
-    - python@3.10.8
     - go@1.19.5
-    - node@18.12.1
 actions:
   disabled:
     - trunk-announce
-    - trunk-check-pre-push
   enabled:
+    - trunk-check-pre-push
     - trunk-fmt-pre-commit
     - trunk-upgrade-available
