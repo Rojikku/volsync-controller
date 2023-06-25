@@ -8,6 +8,7 @@ plugins:
       uri: https://github.com/trunk-io/plugins
 lint:
   enabled:
+    - codespell@2.2.5
     - cspell@6.31.1
     - checkov@2.3.301
     - gokart@0.5.1
