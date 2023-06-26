@@ -24,7 +24,7 @@ import (
 
 	// "time"
 
-	"github.com/itchyny/gojq" // json parser
+	// json parser
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -44,6 +44,22 @@ import (
 	// _ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	// _ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 )
+
+// TODO: Finish this struct
+type ReplicationSource struct {
+	ApiVersion string `json:"apiVersion"`
+	Kind       string `json:"kind"`
+	Metadata   struct {
+		CreationTimestamp string `json:"creationTimestamp"`
+		Generation        int    `json:"generation"`
+		Name              string `json:"name"`
+		Namespace         string `json:"namespace"`
+		ResourceVersion   string `json:"resourceVersion"`
+		SelfLink          string `json:"selfLink"`
+		Uid               string `json:"uid"`
+	} `json:"metadata"`
+	Unk map[string]interface{} `json:"-"`
+}
 
 // Define flag variables
 var externalTest = false
@@ -109,37 +125,35 @@ func main() {
 	} else {
 		panic("No pods found")
 	}
-		
+
 	// fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
 
-	// List all instances of replicationsource crd try 2
-	// TODO: Process this data
+	// List all instances of replicationsource crd
 	ctx := context.Background()
 	dynamic := dynamic.NewForConfigOrDie(config)
 
 	namespace := "default"
-	items, err := GetResourcesDynamically(dynamic, ctx, "volsync.backube", "v1alpha1", "replicationsources", namespace)
+	items, err := GetResourcesAsRS(dynamic, ctx, "volsync.backube", "v1alpha1", "replicationsources", namespace)
 	if err != nil {
 		fmt.Printf("Error: %v", err)
 		panic(err)
 	}
+
+	fmt.Printf("There are %d replicationsources in %s\n", len(items), namespace)
+
 	for _, backup := range items {
-		fmt.Printf("%+v", backup)
+		fmt.Printf("%+v\n", backup.Metadata.Name)
 	}
 
 }
 
 // Stolen code: https://itnext.io/generically-working-with-kubernetes-resources-in-go-53bce678f887
-func GetResourcesByJq(dynamic dynamic.Interface, ctx context.Context, group string,
-	version string, resource string, namespace string, jq string) (
-	[]unstructured.Unstructured, error) {
+func GetResourcesAsRS(dynamic dynamic.Interface, ctx context.Context, group string,
+	version string, resource string, namespace string) (
+	[]ReplicationSource, error) {
 
-	resources := make([]unstructured.Unstructured, 0)
-
-	query, err := gojq.Parse(jq)
-	if err != nil {
-		return nil, err
-	}
+	// resources := make([]ReplicationSource, 0)
+	resources := make([]ReplicationSource, 0)
 
 	items, err := GetResourcesDynamically(dynamic, ctx, group, version, resource, namespace)
 	if err != nil {
@@ -148,32 +162,41 @@ func GetResourcesByJq(dynamic dynamic.Interface, ctx context.Context, group stri
 
 	for _, item := range items {
 		// Convert object to raw JSON
-		var rawJson interface{}
-		err = runtime.DefaultUnstructuredConverter.FromUnstructured(item.Object, &rawJson)
+		var rs ReplicationSource
+		err = runtime.DefaultUnstructuredConverter.FromUnstructured(item.Object, &rs)
 		if err != nil {
 			return nil, err
 		}
+		// rs := ReplicationSource{}
+		resources = append(resources, rs)
+
+		// if happyJson, ok := rawJson.(interface{}); ok {
+		// 	err := json.Unmarshal([]byte(happyJson), &rs)
+		// 	if err != nil {
+		// 		return nil, err
+		// 	}
+		// 	resources = append(resources, rs)
+		// }
 
 		// Evaluate jq against JSON
-		iter := query.Run(rawJson)
-		for {
-			result, ok := iter.Next()
-			if !ok {
-				break
-			}
-			if err, ok := result.(error); ok {
-				if err != nil {
-					return nil, err
-				}
-			} else {
-				boolResult, ok := result.(bool)
-				if !ok {
-					fmt.Println("Query returned non-boolean value")
-				} else if boolResult {
-					resources = append(resources, item)
-				}
-			}
-		}
+		// iter := query.Run(rawJson)
+		// for {
+		// 	result, ok := iter.Next()
+		// 	if !ok {
+		// 		break
+		// 	}
+		// 	if err, ok := result.(error); ok {
+		// 		if err != nil {
+		// 			return nil, err
+		// 		}
+		// 	} else {
+		// 		boolResult, ok := result.(bool)
+		// 		if !ok {
+		// 			fmt.Println("Query returned non-boolean value")
+		// 		} else if boolResult {
+		// 		}
+		// 	}
+		// }
 	}
 	return resources, nil
 }
