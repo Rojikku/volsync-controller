@@ -24,8 +24,14 @@ import (
 
 	// "time"
 
+	"github.com/itchyny/gojq" // json parser
+
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -106,16 +112,88 @@ func main() {
 		
 	// fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
 
-	// List all instances of replicationsource crd
-	// FIXME: This is unmarshaled json or something and I don't know how to fix it, but it returns data.
-	data, err := clientset.RESTClient().Get().AbsPath("/apis/volsync.backube/v1alpha1/replicationsources"). //Namespace("default").
-	DoRaw(context.TODO())
+	// List all instances of replicationsource crd try 2
+	// TODO: Process this data
+	ctx := context.Background()
+	dynamic := dynamic.NewForConfigOrDie(config)
+
+	namespace := "default"
+	items, err := GetResourcesDynamically(dynamic, ctx, "volsync.backube", "v1alpha1", "replicationsources", namespace)
 	if err != nil {
 		fmt.Printf("Error: %v", err)
 		panic(err)
 	}
-	// id := struct{}
-	// data = json.Unmarshal(data, &id)
-	fmt.Printf("%v", data)
+	for _, backup := range items {
+		fmt.Printf("%+v", backup)
+	}
 
+}
+
+// Stolen code: https://itnext.io/generically-working-with-kubernetes-resources-in-go-53bce678f887
+func GetResourcesByJq(dynamic dynamic.Interface, ctx context.Context, group string,
+	version string, resource string, namespace string, jq string) (
+	[]unstructured.Unstructured, error) {
+
+	resources := make([]unstructured.Unstructured, 0)
+
+	query, err := gojq.Parse(jq)
+	if err != nil {
+		return nil, err
+	}
+
+	items, err := GetResourcesDynamically(dynamic, ctx, group, version, resource, namespace)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, item := range items {
+		// Convert object to raw JSON
+		var rawJson interface{}
+		err = runtime.DefaultUnstructuredConverter.FromUnstructured(item.Object, &rawJson)
+		if err != nil {
+			return nil, err
+		}
+
+		// Evaluate jq against JSON
+		iter := query.Run(rawJson)
+		for {
+			result, ok := iter.Next()
+			if !ok {
+				break
+			}
+			if err, ok := result.(error); ok {
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				boolResult, ok := result.(bool)
+				if !ok {
+					fmt.Println("Query returned non-boolean value")
+				} else if boolResult {
+					resources = append(resources, item)
+				}
+			}
+		}
+	}
+	return resources, nil
+}
+
+// Stolen code: https://itnext.io/generically-working-with-kubernetes-resources-in-go-53bce678f887
+func GetResourcesDynamically(dynamic dynamic.Interface, ctx context.Context,
+	group string, version string, resource string, namespace string) (
+	[]unstructured.Unstructured, error) {
+
+	resourceId := schema.GroupVersionResource{
+		Group:    group,
+		Version:  version,
+		Resource: resource,
+	}
+	list, err := dynamic.Resource(resourceId).Namespace(namespace).
+		List(ctx, metav1.ListOptions{})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return list.Items, nil
 }
