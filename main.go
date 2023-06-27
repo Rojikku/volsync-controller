@@ -58,6 +58,20 @@ type ReplicationSource struct {
 		SelfLink          string `json:"selfLink"`
 		Uid               string `json:"uid"`
 	} `json:"metadata"`
+	Status struct {
+		Conditions []struct {
+			LastTransitionTime string `json:"lastTransitionTime"`
+			Message            string `json:"message"`
+			Reason             string `json:"reason"`
+			Status             string `json:"status"`
+			Type               string `json:"type"`
+		} `json:"conditions"`
+		LastSyncTime string `json:"lastSyncTime"`
+		LastSyncDuration string `json:"lastSyncDuration"`
+		LatestMoverStatus struct {
+			Result string `json:"result"`
+		} `json:"latestMoverStatus"`
+	} `json:"status"`
 	Unk map[string]interface{} `json:"-"`
 }
 
@@ -141,8 +155,9 @@ func main() {
 
 	fmt.Printf("There are %d replicationsources in %s\n", len(items), namespace)
 
+	fmt.Printf("ReplicationSources:\n")
 	for _, backup := range items {
-		fmt.Printf("%+v\n", backup.Metadata.Name)
+		fmt.Printf("%s | %s | %s | %s\n", backup.Metadata.Name, backup.Metadata.Namespace, backup.Status.LatestMoverStatus.Result, backup.Status.LastSyncTime)
 	}
 
 }
