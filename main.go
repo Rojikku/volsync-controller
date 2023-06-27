@@ -1,22 +1,8 @@
-/*
-Copyright 2016 The Kubernetes Authors.
+// TODO: Put applicable license here
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
-// Note: the example only works with the code within the same release/branch.
 package main
 
+// TODO: Refine imports list
 import (
 	"context"
 	"flag"
@@ -45,7 +31,7 @@ import (
 	// _ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 )
 
-// TODO: Finish this struct
+// TODO: Refine this struct to be more useful
 type ReplicationSource struct {
 	ApiVersion string `json:"apiVersion"`
 	Kind       string `json:"kind"`
@@ -89,6 +75,7 @@ func main() {
 	var volsyncNamespace string = "volsync"
 
 	if externalTest {
+		// FIXME: This is a hack to get the kubeconfig file from the current directory, probs needs full implementation
 		kubeconfig := flag.String("kubeconfig", ".kubeconfig", "(optional) absolute path to the kubeconfig file")
 		// if home := homedir.HomeDir(); home != "" {
 		// 	kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
@@ -147,7 +134,7 @@ func main() {
 	dynamic := dynamic.NewForConfigOrDie(config)
 
 	namespace := ""
-	items, err := GetResourcesAsRS(dynamic, ctx, "volsync.backube", "v1alpha1", namespace)
+	items, err := GetResourcesAsRS(dynamic, ctx, namespace)
 	if err != nil {
 		fmt.Printf("Error: %v", err)
 		panic(err)
@@ -165,56 +152,26 @@ func main() {
 
 }
 
-// Stolen code: https://itnext.io/generically-working-with-kubernetes-resources-in-go-53bce678f887
-func GetResourcesAsRS(dynamic dynamic.Interface, ctx context.Context, group string,
-	version string, namespace string) (
+func GetResourcesAsRS(dynamic dynamic.Interface, ctx context.Context, namespace string) (
 	[]ReplicationSource, error) {
 
-	// resources := make([]ReplicationSource, 0)
+	// Define var to return
 	resources := make([]ReplicationSource, 0)
 
-	items, err := GetResourcesDynamically(dynamic, ctx, group, version, "replicationsources", namespace)
+	// Get all replication sources requested
+	items, err := GetResourcesDynamically(dynamic, ctx, "volsync.backube", "v1alpha1", "replicationsources", namespace)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, item := range items {
-		// Convert object to raw JSON
+		// Convert unstructured object to typed ReplicationSource
 		var rs ReplicationSource
 		err = runtime.DefaultUnstructuredConverter.FromUnstructured(item.Object, &rs)
 		if err != nil {
 			return nil, err
 		}
-		// rs := ReplicationSource{}
 		resources = append(resources, rs)
-
-		// if happyJson, ok := rawJson.(interface{}); ok {
-		// 	err := json.Unmarshal([]byte(happyJson), &rs)
-		// 	if err != nil {
-		// 		return nil, err
-		// 	}
-		// 	resources = append(resources, rs)
-		// }
-
-		// Evaluate jq against JSON
-		// iter := query.Run(rawJson)
-		// for {
-		// 	result, ok := iter.Next()
-		// 	if !ok {
-		// 		break
-		// 	}
-		// 	if err, ok := result.(error); ok {
-		// 		if err != nil {
-		// 			return nil, err
-		// 		}
-		// 	} else {
-		// 		boolResult, ok := result.(bool)
-		// 		if !ok {
-		// 			fmt.Println("Query returned non-boolean value")
-		// 		} else if boolResult {
-		// 		}
-		// 	}
-		// }
 	}
 	return resources, nil
 }
