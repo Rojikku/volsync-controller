@@ -66,8 +66,8 @@ type ReplicationSource struct {
 			Status             string `json:"status"`
 			Type               string `json:"type"`
 		} `json:"conditions"`
-		LastSyncTime string `json:"lastSyncTime"`
-		LastSyncDuration string `json:"lastSyncDuration"`
+		LastSyncTime      string `json:"lastSyncTime"`
+		LastSyncDuration  string `json:"lastSyncDuration"`
 		LatestMoverStatus struct {
 			Result string `json:"result"`
 		} `json:"latestMoverStatus"`
@@ -146,13 +146,16 @@ func main() {
 	ctx := context.Background()
 	dynamic := dynamic.NewForConfigOrDie(config)
 
-	namespace := "default"
-	items, err := GetResourcesAsRS(dynamic, ctx, "volsync.backube", "v1alpha1", "replicationsources", namespace)
+	namespace := ""
+	items, err := GetResourcesAsRS(dynamic, ctx, "volsync.backube", "v1alpha1", namespace)
 	if err != nil {
 		fmt.Printf("Error: %v", err)
 		panic(err)
 	}
 
+	if namespace == "" {
+		namespace = "total"
+	}
 	fmt.Printf("There are %d replicationsources in %s\n", len(items), namespace)
 
 	fmt.Printf("ReplicationSources:\n")
@@ -164,13 +167,13 @@ func main() {
 
 // Stolen code: https://itnext.io/generically-working-with-kubernetes-resources-in-go-53bce678f887
 func GetResourcesAsRS(dynamic dynamic.Interface, ctx context.Context, group string,
-	version string, resource string, namespace string) (
+	version string, namespace string) (
 	[]ReplicationSource, error) {
 
 	// resources := make([]ReplicationSource, 0)
 	resources := make([]ReplicationSource, 0)
 
-	items, err := GetResourcesDynamically(dynamic, ctx, group, version, resource, namespace)
+	items, err := GetResourcesDynamically(dynamic, ctx, group, version, "replicationsources", namespace)
 	if err != nil {
 		return nil, err
 	}
