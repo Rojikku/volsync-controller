@@ -10,8 +10,7 @@ import (
 // TestUnstructuredToRS calls main.unstructuredToRS with an unstructured example, checking
 // for a valid return value.
 func TestUnstructuredToRS(t *testing.T) {
-	var data unstructured.Unstructured
-	data = unstructured.Unstructured{
+	var data unstructured.Unstructured = unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": "volsync.backube/v1alpha1",
 			"kind":       "ReplicationSource",
@@ -73,8 +72,7 @@ func TestUnstructuredToRS(t *testing.T) {
 // TestHelloEmpty calls greetings.Hello with an empty string,
 // checking for an error.
 func TestUnstructuredToRSEmpty(t *testing.T) {
-	var data unstructured.Unstructured
-	data = unstructured.Unstructured{
+	var data unstructured.Unstructured = unstructured.Unstructured{
 		Object: map[string]interface{}{},
 	}
 	_, err := unstructuredToRS(data)

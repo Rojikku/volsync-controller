@@ -67,9 +67,9 @@ type replicationSource struct {
 }
 
 // Define flag variables
-var externalTest bool = false // In-Cluster config by default
-var kubeconfig string = ".kubeconfig" // Use local kubeconfig
-var searchNamespace string = "" // Search all by default
+var externalTest bool = false           // In-Cluster config by default
+var kubeconfig string = ".kubeconfig"   // Use local kubeconfig
+var searchNamespace string = ""         // Search all by default
 var volsyncNamespace string = "volsync" // Namespace where volsync pods are deployed
 
 func init() {
@@ -228,6 +228,7 @@ func getResourcesAsRS(ctx context.Context, dynamic dynamic.Interface, namespace 
 type invalidReplicationSourceError struct {
 	message string
 }
+
 func (e *invalidReplicationSourceError) Error() string {
 	return e.message
 }
@@ -236,8 +237,7 @@ func (e *invalidReplicationSourceError) Error() string {
 func unstructuredToRS(item unstructured.Unstructured) (replicationSource, error) {
 	// Convert unstructured object to typed ReplicationSource
 	var rs replicationSource
-	var err error
-	err = runtime.DefaultUnstructuredConverter.FromUnstructured(item.Object, &rs)
+	var err error = runtime.DefaultUnstructuredConverter.FromUnstructured(item.Object, &rs)
 	if err != nil {
 		return rs, err
 	} else if len(rs.Metadata.Name) <= 0 || len(rs.Metadata.Namespace) <= 0 {

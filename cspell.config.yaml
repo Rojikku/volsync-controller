@@ -8,6 +8,7 @@ ignorePaths:
   - go.mod
   - go.sum
   - vendor
+  - Makefile
 dictionaryDefinitions: []
 dictionaries: []
 words:
