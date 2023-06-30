@@ -126,10 +126,10 @@ func init() {
 	flag.StringVar(&searchNamespace, "namespace", searchNamespace, "(optional) namespace to search for replicationsources (defaults to all)")
 	flag.StringVar(&volsyncNamespace, "volsync-namespace", volsyncNamespace, "(optional) namespace where volsync pods are deployed")
 
-	flag.Parse()
 }
 
 func main() {
+	flag.Parse()
 
 	var config *rest.Config
 	var err error
@@ -216,13 +216,36 @@ func getResourcesAsRS(ctx context.Context, dynamic dynamic.Interface, namespace 
 	for _, item := range items {
 		// Convert unstructured object to typed ReplicationSource
 		var rs replicationSource
-		err = runtime.DefaultUnstructuredConverter.FromUnstructured(item.Object, &rs)
+		rs, err = unstructuredToRS(item)
 		if err != nil {
 			return nil, err
 		}
 		resources = append(resources, rs)
 	}
 	return resources, nil
+}
+
+type invalidReplicationSourceError struct {
+	message string
+}
+func (e *invalidReplicationSourceError) Error() string {
+	return e.message
+}
+
+// unstructuredToRS converts an unstructured object to a typed ReplicationSource using the above error type
+func unstructuredToRS(item unstructured.Unstructured) (replicationSource, error) {
+	// Convert unstructured object to typed ReplicationSource
+	var rs replicationSource
+	var err error
+	err = runtime.DefaultUnstructuredConverter.FromUnstructured(item.Object, &rs)
+	if err != nil {
+		return rs, err
+	} else if len(rs.Metadata.Name) <= 0 || len(rs.Metadata.Namespace) <= 0 {
+		return rs, &invalidReplicationSourceError{"Invalid or empty replication source was returned: No name and/or namespace"}
+	} else if len(rs.Status.LatestMoverStatus.Result) <= 0 || len(rs.Status.LastSyncTime) <= 0 {
+		return rs, &invalidReplicationSourceError{fmt.Sprintf("ReplicationSource %s in namespace %s is missing required fields", rs.Metadata.Name, rs.Metadata.Namespace)}
+	}
+	return rs, nil
 }
 
 // Stolen code: https://itnext.io/generically-working-with-kubernetes-resources-in-go-53bce678f887
