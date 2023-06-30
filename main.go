@@ -7,6 +7,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log"
 
 	// "time"
 
@@ -84,24 +85,24 @@ func main() {
 		config, err = rest.InClusterConfig()
 	}
 	if err != nil {
-		panic(err.Error())
+		log.Panic(err.Error())
 	}
 
 	// create the clientset
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		panic(err.Error())
+		log.Panic(err.Error())
 	}
 
 	// Query pods
 	pods, err := clientset.CoreV1().Pods(volsyncNamespace).List(context.TODO(), metav1.ListOptions{})
 	if errors.IsNotFound(err) {
-		fmt.Printf("Unable to find volsync pod in %s namespace\n", volsyncNamespace)
+		log.Printf("Unable to find volsync pod in %s namespace\n", volsyncNamespace)
 	} else if statusError, isStatus := err.(*errors.StatusError); isStatus {
-		fmt.Printf("Error getting pod in namespace %s: %v\n",
+		log.Printf("Error getting pod in namespace %s: %v\n",
 			volsyncNamespace, statusError.ErrStatus.Message)
 	} else if err != nil {
-		panic(err.Error())
+		log.Panic(err.Error())
 	}
 	fmt.Printf("There are %d pods in %s\n", len(pods.Items), volsyncNamespace)
 
@@ -115,13 +116,11 @@ func main() {
 			}
 		}
 		if !match {
-			fmt.Printf("volsync pod not found???\n")
+			log.Printf("volsync pod not found???\n")
 		}
 	} else {
-		panic("No pods found")
+		log.Panic("No VolSync pods found")
 	}
-
-	// fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
 
 	// List all instances of replicationsource crd
 	ctx := context.Background()
@@ -130,8 +129,7 @@ func main() {
 	namespace := ""
 	items, err := GetResourcesAsRS(dynamic, ctx, namespace)
 	if err != nil {
-		fmt.Printf("Error: %v", err)
-		panic(err)
+		log.Panic(err)
 	}
 
 	if namespace == "" {
@@ -139,7 +137,7 @@ func main() {
 	}
 	fmt.Printf("There are %d replicationsources in %s\n", len(items), namespace)
 
-	fmt.Printf("ReplicationSources:\n")
+	fmt.Println("ReplicationSources:")
 	for _, backup := range items {
 		fmt.Printf("%s | %s | %s | %s\n", backup.Metadata.Name, backup.Metadata.Namespace, backup.Status.LatestMoverStatus.Result, backup.Status.LastSyncTime)
 	}
