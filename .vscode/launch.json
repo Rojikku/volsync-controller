@@ -10,7 +10,8 @@
       "request": "launch",
       "mode": "auto",
       "program": "${workspaceFolder}",
-      "args": ["--external", "true"]
+      "args": ["--external", "true"],
+      "console": "integratedTerminal"
     },
     {
       "name": "Internal Debug",
