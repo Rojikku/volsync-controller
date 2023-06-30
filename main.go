@@ -63,10 +63,12 @@ type ReplicationSource struct {
 
 // Define flag variables
 var externalTest = false
+var kubeconfig = ".kubeconfig"
 
 func main() {
 	// Bind flags
 	flag.BoolVar(&externalTest, "external", false, "use external to cluster configuration")
+	flag.StringVar(&kubeconfig, "kubeconfig", ".kubeconfig", "(optional) absolute path to the kubeconfig file")
 
 	flag.Parse()
 
@@ -75,16 +77,8 @@ func main() {
 	var volsyncNamespace string = "volsync"
 
 	if externalTest {
-		// FIXME: This is a hack to get the kubeconfig file from the current directory, probs needs full implementation
-		kubeconfig := flag.String("kubeconfig", ".kubeconfig", "(optional) absolute path to the kubeconfig file")
-		// if home := homedir.HomeDir(); home != "" {
-		// 	kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-		// } else {
-		// 	kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-		// }
-
 		// use the current context in kubeconfig
-		config, err = clientcmd.BuildConfigFromFlags("", *kubeconfig)
+		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
 	} else {
 		// creates the in-cluster config
 		config, err = rest.InClusterConfig()
