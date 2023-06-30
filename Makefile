@@ -50,3 +50,10 @@ dep-update: ## Update the vendor directory
 	go get -u ./...
 	go mod tidy
 	go mod vendor
+
+##@ Test
+
+test-main:
+	go test -v -race -cover -coverprofile main-coverage.out -timeout 30s github.com/Rojikku/volsync-controller
+
+test: | test-main

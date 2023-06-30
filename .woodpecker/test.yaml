@@ -1,0 +1,25 @@
+variables:
+  - &golang_image "golang:1.20.5"
+  - &when_path # related config files
+    - .woodpecker/test.yml
+    # go source code
+    - "**/*.go"
+    - go.*
+    - "*.go"
+
+steps:
+  vendor:
+    image: *golang_image
+    group: prepare
+    commands:
+      - go mod vendor
+    when:
+      path: *when_path
+
+  test:
+    image: *golang_image
+    group: test
+    commands:
+      - make test-main
+    when:
+      path: *when_path
