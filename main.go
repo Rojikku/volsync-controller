@@ -33,8 +33,8 @@ import (
 )
 
 // TODO: Refine this struct to be more useful
-type ReplicationSource struct {
-	ApiVersion string `json:"apiVersion"`
+type replicationSource struct {
+	APIVersion string `json:"apiVersion"`
 	Kind       string `json:"kind"`
 	Metadata   struct {
 		CreationTimestamp string `json:"creationTimestamp"`
@@ -43,7 +43,7 @@ type ReplicationSource struct {
 		Namespace         string `json:"namespace"`
 		ResourceVersion   string `json:"resourceVersion"`
 		SelfLink          string `json:"selfLink"`
-		Uid               string `json:"uid"`
+		UID               string `json:"uid"`
 	} `json:"metadata"`
 	Status struct {
 		Conditions []struct {
@@ -129,7 +129,7 @@ func main() {
 	dynamic := dynamic.NewForConfigOrDie(config)
 
 	namespace := searchNamespace
-	items, err := GetResourcesAsRS(dynamic, ctx, namespace)
+	items, err := getResourcesAsRS(ctx, dynamic, namespace)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -146,21 +146,21 @@ func main() {
 
 }
 
-func GetResourcesAsRS(dynamic dynamic.Interface, ctx context.Context, namespace string) (
-	[]ReplicationSource, error) {
+func getResourcesAsRS(ctx context.Context, dynamic dynamic.Interface, namespace string) (
+	[]replicationSource, error) {
 
 	// Define var to return
-	resources := make([]ReplicationSource, 0)
+	resources := make([]replicationSource, 0)
 
 	// Get all replication sources requested
-	items, err := GetResourcesDynamically(dynamic, ctx, "volsync.backube", "v1alpha1", "replicationsources", namespace)
+	items, err := getResourcesDynamically(ctx,dynamic, "volsync.backube", "v1alpha1", "replicationsources", namespace)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, item := range items {
 		// Convert unstructured object to typed ReplicationSource
-		var rs ReplicationSource
+		var rs replicationSource
 		err = runtime.DefaultUnstructuredConverter.FromUnstructured(item.Object, &rs)
 		if err != nil {
 			return nil, err
@@ -171,16 +171,17 @@ func GetResourcesAsRS(dynamic dynamic.Interface, ctx context.Context, namespace 
 }
 
 // Stolen code: https://itnext.io/generically-working-with-kubernetes-resources-in-go-53bce678f887
-func GetResourcesDynamically(dynamic dynamic.Interface, ctx context.Context,
+// GetResourcesDynamically returns a list of unstructured objects after querying the cluster
+func getResourcesDynamically(ctx context.Context, dynamic dynamic.Interface,
 	group string, version string, resource string, namespace string) (
 	[]unstructured.Unstructured, error) {
 
-	resourceId := schema.GroupVersionResource{
+	resourceID := schema.GroupVersionResource{
 		Group:    group,
 		Version:  version,
 		Resource: resource,
 	}
-	list, err := dynamic.Resource(resourceId).Namespace(namespace).
+	list, err := dynamic.Resource(resourceID).Namespace(namespace).
 		List(ctx, metav1.ListOptions{})
 
 	if err != nil {
