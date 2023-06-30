@@ -15,6 +15,9 @@ words:
   - backube
   - clientcmd
   - clientset
+  - godotenv
+  - Infof
+  - joho
   - kubeconfig
   - logrus
   - metav

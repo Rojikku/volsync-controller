@@ -7,8 +7,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"os"
 
 	log "github.com/sirupsen/logrus"
+
+	_ "github.com/joho/godotenv/autoload" // Load .env file automatically
 
 	// "time"
 
@@ -64,21 +67,72 @@ type replicationSource struct {
 }
 
 // Define flag variables
-var externalTest = false // In-Cluster config by default
-var kubeconfig = ".kubeconfig" // Use local kubeconfig
-var searchNamespace = "" // Search all by default
+var externalTest bool = false // In-Cluster config by default
+var kubeconfig string = ".kubeconfig" // Use local kubeconfig
+var searchNamespace string = "" // Search all by default
+var volsyncNamespace string = "volsync" // Namespace where volsync pods are deployed
 
-func main() {
+func init() {
+	if value, ok := os.LookupEnv("LOG_LEVEL"); ok {
+		switch value {
+		case "trace":
+			log.SetLevel(log.TraceLevel)
+		case "debug":
+			log.SetLevel(log.DebugLevel)
+		case "info":
+			log.SetLevel(log.InfoLevel)
+		case "warn":
+			log.SetLevel(log.WarnLevel)
+		case "error":
+			log.SetLevel(log.ErrorLevel)
+		case "fatal":
+			log.SetLevel(log.FatalLevel)
+		case "panic":
+			log.SetLevel(log.PanicLevel)
+		default:
+			log.SetLevel(log.InfoLevel)
+		}
+	} else {
+		log.SetLevel(log.InfoLevel)
+	}
+
+	if value, ok := os.LookupEnv("LOG_FORMAT"); ok {
+		switch value {
+		case "json":
+			log.SetFormatter(&log.JSONFormatter{})
+		case "text":
+			log.SetFormatter(&log.TextFormatter{
+				DisableColors: false,
+				FullTimestamp: true,
+			})
+		default:
+			log.SetFormatter(&log.JSONFormatter{})
+		}
+	} else {
+		log.SetFormatter(&log.JSONFormatter{})
+	}
+
+	if value, ok := os.LookupEnv("NAMESPACE"); ok {
+		searchNamespace = value
+	}
+
+	if value, ok := os.LookupEnv("VOLSYNC_NAMESPACE"); ok {
+		volsyncNamespace = value
+	}
+
 	// Bind flags
-	flag.BoolVar(&externalTest, "external", false, "use external to cluster configuration")
-	flag.StringVar(&kubeconfig, "kubeconfig", ".kubeconfig", "(optional) absolute path to the kubeconfig file")
-	flag.StringVar(&searchNamespace, "namespace", "", "(optional) namespace to search for replicationsources (defaults to all)")
+	flag.BoolVar(&externalTest, "external", externalTest, "(optional) use external to cluster configuration (default false)")
+	flag.StringVar(&kubeconfig, "kubeconfig", kubeconfig, "(optional) absolute path to the kubeconfig file")
+	flag.StringVar(&searchNamespace, "namespace", searchNamespace, "(optional) namespace to search for replicationsources (defaults to all)")
+	flag.StringVar(&volsyncNamespace, "volsync-namespace", volsyncNamespace, "(optional) namespace where volsync pods are deployed")
 
 	flag.Parse()
+}
+
+func main() {
 
 	var config *rest.Config
 	var err error
-	var volsyncNamespace string = "volsync"
 
 	if externalTest {
 		// use the current context in kubeconfig
@@ -107,19 +161,19 @@ func main() {
 	} else if err != nil {
 		log.Panic(err.Error())
 	}
-	fmt.Printf("There are %d pods in %s\n", len(pods.Items), volsyncNamespace)
+	log.Infof("There are %d pods in %s", len(pods.Items), volsyncNamespace)
 
 	// Verify the volsync pod is running
 	if len(pods.Items) >= 1 {
 		match := false
 		for _, pod := range pods.Items {
 			if pod.Name[:7] == "volsync" {
-				fmt.Printf("Pod %s in namespace %s found\n", pod.Name, pod.Namespace)
+				log.Infof("Pod %s in namespace %s found", pod.Name, pod.Namespace)
 				match = true
 			}
 		}
 		if !match {
-			log.Printf("volsync pod not found???\n")
+			log.Warn("volsync pod not found???")
 		}
 	} else {
 		log.Panic("No VolSync pods found")
@@ -154,7 +208,7 @@ func getResourcesAsRS(ctx context.Context, dynamic dynamic.Interface, namespace 
 	resources := make([]replicationSource, 0)
 
 	// Get all replication sources requested
-	items, err := getResourcesDynamically(ctx,dynamic, "volsync.backube", "v1alpha1", "replicationsources", namespace)
+	items, err := getResourcesDynamically(ctx, dynamic, "volsync.backube", "v1alpha1", "replicationsources", namespace)
 	if err != nil {
 		return nil, err
 	}
