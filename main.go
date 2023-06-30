@@ -13,27 +13,15 @@ import (
 
 	_ "github.com/joho/godotenv/autoload" // Load .env file automatically
 
-	// "time"
-
-	// json parser
-
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured" // Load unstructured data type for CRDs
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/dynamic" // Load dynamic client for checking CRD data
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	//
-	// Uncomment to load all auth plugins
-	// _ "k8s.io/client-go/plugin/pkg/client/auth"
-	//
-	// Or uncomment to load specific auth plugins
-	// _ "k8s.io/client-go/plugin/pkg/client/auth/azure"
-	// _ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	// _ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
+	"k8s.io/client-go/rest"            // Load in-cluster config
+	"k8s.io/client-go/tools/clientcmd" // Load kubeconfig from file
 )
 
 // TODO: Refine this struct to be more useful
@@ -154,14 +142,14 @@ func main() {
 	// Query pods
 	pods, err := clientset.CoreV1().Pods(volsyncNamespace).List(context.TODO(), metav1.ListOptions{})
 	if errors.IsNotFound(err) {
-		log.Errorf("Unable to find volsync pod in %s namespace\n", volsyncNamespace)
+		log.Errorf("Unable to find volsync pod in %s namespace", volsyncNamespace)
 	} else if statusError, isStatus := err.(*errors.StatusError); isStatus {
-		log.Errorf("Error getting pod in namespace %s: %v\n",
+		log.Errorf("Error getting pod in namespace %s: %v",
 			volsyncNamespace, statusError.ErrStatus.Message)
 	} else if err != nil {
 		log.Panic(err.Error())
 	}
-	log.Infof("There are %d pods in %s", len(pods.Items), volsyncNamespace)
+	log.Debugf("There are %d pods in %s", len(pods.Items), volsyncNamespace)
 
 	// Verify the volsync pod is running
 	if len(pods.Items) >= 1 {
@@ -176,7 +164,8 @@ func main() {
 			log.Warn("volsync pod not found???")
 		}
 	} else {
-		log.Panic("No VolSync pods found")
+		// Currently does not rely on volsync pod
+		log.Error("No VolSync pods found")
 	}
 
 	// List all instances of replicationsource crd
@@ -186,14 +175,17 @@ func main() {
 	namespace := searchNamespace
 	items, err := getResourcesAsRS(ctx, dynamic, namespace)
 	if err != nil {
+		// FIXME: This doesn't need to be fatal
 		log.Panic(err)
 	}
 
 	if namespace == "" {
 		namespace = "total"
 	}
-	fmt.Printf("There are %d replicationsources in %s\n", len(items), namespace)
+	// TODO: Degrade to debug after webUI is implemented
+	log.Infof("There are %d replicationsources in %s\n", len(items), namespace)
 
+	// TODO: Replace with webUI
 	fmt.Println("ReplicationSources:")
 	for _, backup := range items {
 		fmt.Printf("%s | %s | %s | %s\n", backup.Metadata.Name, backup.Metadata.Namespace, backup.Status.LatestMoverStatus.Result, backup.Status.LastSyncTime)
@@ -201,6 +193,7 @@ func main() {
 
 }
 
+// getResourcesAsRS returns a list of ReplicationSource objects after doing a dynamic query in a namespace
 func getResourcesAsRS(ctx context.Context, dynamic dynamic.Interface, namespace string) (
 	[]replicationSource, error) {
 
@@ -217,6 +210,7 @@ func getResourcesAsRS(ctx context.Context, dynamic dynamic.Interface, namespace 
 		// Convert unstructured object to typed ReplicationSource
 		var rs replicationSource
 		rs, err = unstructuredToRS(item)
+		// FIXME: Handle custom errors without panic
 		if err != nil {
 			return nil, err
 		}
@@ -249,7 +243,7 @@ func unstructuredToRS(item unstructured.Unstructured) (replicationSource, error)
 }
 
 // Stolen code: https://itnext.io/generically-working-with-kubernetes-resources-in-go-53bce678f887
-// GetResourcesDynamically returns a list of unstructured objects after querying the cluster
+// getResourcesDynamically returns a list of unstructured objects after querying the cluster
 func getResourcesDynamically(ctx context.Context, dynamic dynamic.Interface,
 	group string, version string, resource string, namespace string) (
 	[]unstructured.Unstructured, error) {

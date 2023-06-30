@@ -16,6 +16,7 @@ words:
   - backube
   - clientcmd
   - clientset
+  - Debugf
   - godotenv
   - Infof
   - joho
