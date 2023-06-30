@@ -63,13 +63,15 @@ type ReplicationSource struct {
 }
 
 // Define flag variables
-var externalTest = false
-var kubeconfig = ".kubeconfig"
+var externalTest = false // In-Cluster config by default
+var kubeconfig = ".kubeconfig" // Use local kubeconfig
+var searchNamespace = "" // Search all by default
 
 func main() {
 	// Bind flags
 	flag.BoolVar(&externalTest, "external", false, "use external to cluster configuration")
 	flag.StringVar(&kubeconfig, "kubeconfig", ".kubeconfig", "(optional) absolute path to the kubeconfig file")
+	flag.StringVar(&searchNamespace, "namespace", "", "(optional) namespace to search for replicationsources (defaults to all)")
 
 	flag.Parse()
 
@@ -126,7 +128,7 @@ func main() {
 	ctx := context.Background()
 	dynamic := dynamic.NewForConfigOrDie(config)
 
-	namespace := ""
+	namespace := searchNamespace
 	items, err := GetResourcesAsRS(dynamic, ctx, namespace)
 	if err != nil {
 		log.Panic(err)
