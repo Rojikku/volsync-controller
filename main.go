@@ -7,7 +7,8 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
+
+	log "github.com/sirupsen/logrus"
 
 	// "time"
 
@@ -87,21 +88,21 @@ func main() {
 		config, err = rest.InClusterConfig()
 	}
 	if err != nil {
-		log.Panic(err.Error())
+		log.Fatal(err.Error())
 	}
 
 	// create the clientset
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		log.Panic(err.Error())
+		log.Fatal(err.Error())
 	}
 
 	// Query pods
 	pods, err := clientset.CoreV1().Pods(volsyncNamespace).List(context.TODO(), metav1.ListOptions{})
 	if errors.IsNotFound(err) {
-		log.Printf("Unable to find volsync pod in %s namespace\n", volsyncNamespace)
+		log.Errorf("Unable to find volsync pod in %s namespace\n", volsyncNamespace)
 	} else if statusError, isStatus := err.(*errors.StatusError); isStatus {
-		log.Printf("Error getting pod in namespace %s: %v\n",
+		log.Errorf("Error getting pod in namespace %s: %v\n",
 			volsyncNamespace, statusError.ErrStatus.Message)
 	} else if err != nil {
 		log.Panic(err.Error())
